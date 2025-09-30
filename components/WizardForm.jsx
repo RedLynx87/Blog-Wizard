@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useBlog } from "../pages/context/BlogContext";
+import { useBlog } from "../context/BlogContext";
 import { useRouter } from "next/router";
 import {
   Box,
@@ -36,8 +36,9 @@ export default function WizardForm() {
     content: "",
     date: new Date().toLocaleDateString("id-ID"),
   });
-
+  const { addBlog } = useBlog();
   const categories = ["Tech", "Lifestyle", "Business"];
+  
   const validateStep = (step = activeStep) => {
     if (step === 0) {
       return formData.title.trim() !== "" && formData.author.trim() !== "";
@@ -66,7 +67,7 @@ export default function WizardForm() {
       setActiveStep(step);
     }
   };
-  const { addBlog } = useBlog();
+  
   const handleComplete = () => {
     if (validateStep()) {
       setCompleted({ ...completed, [activeStep]: true });

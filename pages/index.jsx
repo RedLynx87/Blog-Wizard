@@ -1,4 +1,4 @@
-import { useBlog } from "./context/BlogContext";
+import { useBlog } from "../context/BlogContext";
 import Link from "next/link";
 import Grid from "@mui/material/Grid";
 import Card from "@/components/Card";

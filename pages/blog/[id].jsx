@@ -1,5 +1,5 @@
 import { useRouter } from "next/router";
-import { useBlog } from "../context/BlogContext";
+import { useBlog } from "../../context/BlogContext";
 import Pagedetail from "@/components/Blogdetail";
 import { Box, Button } from "@mui/material";
 
