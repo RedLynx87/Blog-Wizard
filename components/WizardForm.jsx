@@ -20,7 +20,7 @@ const steps = [
   "Blog Metadata",
   "Blog Summary & Category",
   "Blog Content",
-  "Revie & Submit",
+  "Review & Submit",
 ];
 
 export default function WizardForm() {
@@ -28,32 +28,56 @@ export default function WizardForm() {
   const [activeStep, setActiveStep] = useState(0);
   const [completed, setCompleted] = useState({});
   const [success, setSuccess] = useState(false);
+  const [errors, setErrors] = useState({});
   const [formData, setFormData] = useState({
     title: "",
     author: "",
     summary: "",
     category: "",
     content: "",
-    date: new Date().toLocaleDateString("id-ID"),
+    date: new Date().toLocaleDateString("en-US"),
   });
+
   const { addBlog } = useBlog();
   const categories = ["Tech", "Lifestyle", "Business"];
-  
+
   const validateStep = (step = activeStep) => {
+    let newErrors = {};
     if (step === 0) {
-      return formData.title.trim() !== "" && formData.author.trim() !== "";
+      if (!formData.title.trim()) {
+        newErrors.title = "Title is required";
+      } else if (formData.title.trim().length < 5) {
+        newErrors.title = "Title must be at least 5 characters";
+      }
+
+      if (!formData.author.trim()) {
+        newErrors.author = "Author is required";
+      } else if (/\d/.test(formData.author)) {
+        newErrors.author = "Author cannot contain numbers";
+      } else if (formData.author.trim().length < 3) {
+        newErrors.author = "Author must be at least 3 characters";
+      }
     }
     if (step === 1) {
-      return formData.summary.trim() !== "" && formData.category.trim() !== "";
+      if (!formData.summary.trim()) {
+        newErrors.summary = "Summary is required";
+      } else if (formData.summary.trim().length < 10) {
+        newErrors.summary = "Summary must be at least 10 characters";
+      }
+      if (!formData.category.trim())
+        newErrors.category = "Category is required";
     }
     if (step === 2) {
-      return formData.content.trim().length >= 20;
+      if (formData.content.trim().length < 20) {
+        newErrors.content = "Content must be at least 20 characters";
+      }
     }
-    return true;
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
   };
 
   const handleNext = () => {
-    if (activeStep < steps.length - 1 && validateStep()) {
+    if (validateStep()) {
       setActiveStep((prev) => prev + 1);
     }
   };
@@ -63,24 +87,15 @@ export default function WizardForm() {
   };
 
   const handleStep = (step) => () => {
-    if (step <= activeStep || validateStep(activeStep)) {
+    if (step <= activeStep && validateStep()) {
       setActiveStep(step);
     }
   };
-  
+
   const handleComplete = () => {
     if (validateStep()) {
       setCompleted({ ...completed, [activeStep]: true });
-      setActiveStep((prev) => prev + 1);
       addBlog(formData);
-      setFormData({
-        title: "",
-        author: "",
-        summary: "",
-        category: "",
-        content: "",
-        date: new Date().toLocaleDateString("id-ID"),
-      });
       setSuccess(true);
       setTimeout(() => {
         router.push("/");
@@ -88,21 +103,8 @@ export default function WizardForm() {
     }
   };
 
-  const allStepsCompleted = () => {
-    return Object.keys(completed).length === steps.length;
-  };
-
-  const handleReset = () => {
-    setActiveStep(0);
-    setCompleted({});
-    setFormData({
-      title: "",
-      author: "",
-      summary: "",
-      category: "",
-      content: "",
-    });
-  };
+  const allStepsCompleted = () =>
+    Object.keys(completed).length === steps.length;
 
   return (
     <Box sx={{ width: "100%", maxWidth: 1024, mx: "auto", mt: 4 }}>
@@ -117,33 +119,26 @@ export default function WizardForm() {
           severity="success"
           variant="filled"
         >
-          Blog created successfully!
+          Blog has been created successfully!
         </Alert>
       </Snackbar>
-      <div className=" hidden md:block">
+
+      <div className="hidden md:block">
         <Stepper nonLinear activeStep={activeStep}>
           {steps.map((label, index) => (
             <Step key={label} completed={completed[index]}>
-              <StepButton
-                color="inherit"
-                onClick={handleStep(index)}
-                disabled={index > activeStep && !validateStep(activeStep)}
-              >
+              <StepButton color="inherit" onClick={handleStep(index)}>
                 {label}
               </StepButton>
             </Step>
           ))}
         </Stepper>
       </div>
-      <div className=" block md:hidden">
+      <div className="block md:hidden">
         <Stepper nonLinear activeStep={activeStep} orientation="vertical">
           {steps.map((label, index) => (
             <Step key={label} completed={completed[index]}>
-              <StepButton
-                color="inherit"
-                onClick={handleStep(index)}
-                disabled={index > activeStep && !validateStep(activeStep)}
-              >
+              <StepButton color="inherit" onClick={handleStep(index)}>
                 {label}
               </StepButton>
             </Step>
@@ -155,13 +150,10 @@ export default function WizardForm() {
         {allStepsCompleted() ? (
           <>
             <Typography variant="h6" gutterBottom>
-              All steps are complete! Your blog has been successfully created.
+              All steps completed! Blog has been created.
             </Typography>
-            <pre className="bg-gray-100 p-2 rounded">
-              {JSON.stringify(formData, null, 2)}
-            </pre>
-            <Button onClick={handleReset} sx={{ mt: 2 }}>
-              Add New Blog
+            <Button onClick={() => setActiveStep(0)} sx={{ mt: 2 }}>
+              Add Another Blog
             </Button>
           </>
         ) : (
@@ -171,6 +163,8 @@ export default function WizardForm() {
                 <TextField
                   label="Blog Title"
                   required
+                  error={!!errors.title}
+                  helperText={errors.title}
                   value={formData.title}
                   onChange={(e) =>
                     setFormData({ ...formData, title: e.target.value })
@@ -179,6 +173,8 @@ export default function WizardForm() {
                 <TextField
                   label="Author Name"
                   required
+                  error={!!errors.author}
+                  helperText={errors.author}
                   value={formData.author}
                   onChange={(e) =>
                     setFormData({ ...formData, author: e.target.value })
@@ -194,6 +190,8 @@ export default function WizardForm() {
                   required
                   multiline
                   rows={3}
+                  error={!!errors.summary}
+                  helperText={errors.summary}
                   value={formData.summary}
                   onChange={(e) =>
                     setFormData({ ...formData, summary: e.target.value })
@@ -203,6 +201,8 @@ export default function WizardForm() {
                   select
                   label="Blog Category"
                   required
+                  error={!!errors.category}
+                  helperText={errors.category}
                   value={formData.category}
                   onChange={(e) =>
                     setFormData({ ...formData, category: e.target.value })
@@ -219,19 +219,16 @@ export default function WizardForm() {
 
             {activeStep === 2 && (
               <TextField
-                label="Blog Content  (min 20 character)"
+                label="Blog Content (min 20 characters)"
                 required
                 multiline
                 rows={6}
                 fullWidth
+                error={!!errors.content}
+                helperText={errors.content}
                 value={formData.content}
                 onChange={(e) =>
                   setFormData({ ...formData, content: e.target.value })
-                }
-                helperText={
-                  formData.content.length < 20
-                    ? "Blog content must be at least 20 characters"
-                    : ""
                 }
               />
             )}
@@ -263,16 +260,13 @@ export default function WizardForm() {
               </Button>
               <Box sx={{ flex: "1 1 auto" }} />
               {activeStep < steps.length - 1 && (
-                <Button onClick={handleNext} disabled={!validateStep()}>
-                  Next
-                </Button>
+                <Button onClick={handleNext}>Next</Button>
               )}
               {activeStep === steps.length - 1 && (
                 <Button
                   onClick={handleComplete}
                   color="primary"
                   variant="contained"
-                  disabled={!validateStep()}
                 >
                   Submit
                 </Button>
